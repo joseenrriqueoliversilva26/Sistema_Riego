@@ -4,8 +4,10 @@ import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-
-export default function HomeScreen() {
+import React from 'react';
+//al homescreen le quitamos la palabra defaul para que n lo autoexporte
+//renombrar archivo a  index._old.tsx
+export function HomeScreen() {
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
