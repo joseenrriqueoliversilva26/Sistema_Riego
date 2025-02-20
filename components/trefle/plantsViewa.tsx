@@ -1,16 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { 
-    ActivityIndicator, 
-    Alert, 
-    FlatList, 
-    StyleSheet, 
-    Text, 
-    View, 
-    RefreshControl, 
-    Dimensions, 
-    Platform,
-    TouchableOpacity 
-} from "react-native";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View, RefreshControl, Dimensions, Platform,TouchableOpacity } from "react-native";
 import { PlantCard } from "./plantCarda";
 import { PlantModal } from "./plantModala";
 import { PlantResult } from "./plantsResulta";
@@ -18,7 +7,6 @@ import { Plant } from "./plantTypea";
 import { DataSource } from "./dataSourcea";
 
 export function PlantsViewa() {
-    // Estados
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [page, setPage] = useState(1);
@@ -34,11 +22,9 @@ export function PlantsViewa() {
         total: 0
     });
 
-    // Referencias
     const flatListRef = useRef<FlatList<Plant>>(null);
     const dataSource = new DataSource();
 
-    // Función para cargar datos
     const loadData = async (pageNumber: number, shouldAppend: boolean = false) => {
         try {
             setLoading(true);
@@ -74,12 +60,10 @@ export function PlantsViewa() {
         }
     };
 
-    // Efecto para cargar datos iniciales
     useEffect(() => {
         loadData(page, page > 1);
     }, [page]);
 
-    // Manejadores de eventos
     const handlePlantPress = (plant: Plant) => {
         setSelectedPlant(plant);
         setModalVisible(true);
@@ -108,7 +92,6 @@ export function PlantsViewa() {
         }
     };
 
-    // Renderizadores
     const renderItem = ({ item }: { item: Plant }) => (
         <PlantCard
             plant={item}
@@ -149,7 +132,6 @@ export function PlantsViewa() {
         </View>
     );
 
-    // Render principal
     return (
         <View style={styles.container}>
             <PlantModal 

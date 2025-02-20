@@ -1,4 +1,3 @@
-// app/(auth)/login.tsx
 import { LoginView } from "@/components/auntentication/login/loginView";
 import { View } from "react-native";
 

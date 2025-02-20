@@ -6,14 +6,12 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { Drawer } from 'expo-router/drawer';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Home, Info, Leaf, Flower, Server } from 'lucide-react-native';
-import { Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
 import { View } from 'react-native';
 import { router } from 'expo-router';
+import { auth } from '@/lib//firebase ';
+import { onAuthStateChanged, User } from 'firebase/auth'; 
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,40 +29,32 @@ const GreenTheme = {
 };
 
 export default function RootLayout() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null); 
+  const [isReady, setIsReady] = useState(false);
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsLoading(false);
-      if (session) {
-        router.replace('/(index)');
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user); 
+      setIsReady(true);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        router.replace('/(index)');
-      }
-    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded && isReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, isReady]);
 
-  if (!loaded || isLoading) {
+  if (!loaded || !isReady) {
     return <View />;
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <ThemeProvider value={GreenTheme}>
         <Stack>
@@ -109,7 +99,7 @@ export default function RootLayout() {
             }}
           />
           <Drawer.Screen
-            name="(supabase)"
+            name="(database)"
             options={{
               drawerLabel: 'Database',
               title: 'Database',
@@ -124,18 +114,13 @@ export default function RootLayout() {
               drawerIcon: ({ color }) => <Info size={28} color={color} />,
             }}
           />
-          <Drawer.Screen
-            name="+not-found"
-            options={{ drawerItemStyle: { display: 'none' } }}
-          />
-          <Drawer.Screen
-            name="index"
-            options={{ drawerItemStyle: { display: 'none' } }}
-          />
-          <Drawer.Screen
-            name="(auth)/login"
-            options={{ drawerItemStyle: { display: 'none' } }}
-          />
+          {['+not-found', 'index', '(auth)/login'].map((screen) => (
+            <Drawer.Screen
+              key={screen}
+              name={screen}
+              options={{ drawerItemStyle: { display: 'none' } }}
+            />
+          ))}
         </Drawer>
       </GestureHandlerRootView>
       <StatusBar style="auto" />

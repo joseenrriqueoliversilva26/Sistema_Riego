@@ -1,17 +1,17 @@
-import { auth } from '@/lib/firebase '; 
+import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, View, AppState, TextInput, Text, Button } from 'react-native';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { FirebaseError } from 'firebase/app'; 
 
 AppState.addEventListener('change', (state) => {
   if (state === 'active') {
+    supabase.auth.startAutoRefresh();
   } else {
+    supabase.auth.stopAutoRefresh();
   }
 });
 
-export function LoginView() {
+export function LoginViewSupabase() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,17 +19,21 @@ export function LoginView() {
   async function signInWithEmail() {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      if (user) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        Alert.alert('Error', error.message);
+        return;
+      }
+
+      if (data.session) {
         router.replace('/(index)');
       }
     } catch (error) {
-      if (error instanceof FirebaseError) { // Verifica si el error es de tipo FirebaseError
-        Alert.alert('Error', error.message);
-      } else {
-        Alert.alert('Error', 'Ocurrió un error desconocido al iniciar sesión');
-      }
+      Alert.alert('Error', 'Ocurrió un error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -38,17 +42,23 @@ export function LoginView() {
   async function signUpWithEmail() {
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      if (user) {
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        Alert.alert('Error', error.message);
+        return;
+      }
+
+      if (data.session) {
         router.replace('/(index)');
+      } else {
+        Alert.alert('Verificación requerida', '¡Por favor, verifica tu correo electrónico!');
       }
     } catch (error) {
-      if (error instanceof FirebaseError) { 
-        Alert.alert('Error', error.message);
-      } else {
-        Alert.alert('Error', 'Ocurrió un error desconocido en el registro');
-      }
+      Alert.alert('Error', 'Ocurrió un error en el registro');
     } finally {
       setLoading(false);
     }
@@ -120,3 +130,4 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
+
