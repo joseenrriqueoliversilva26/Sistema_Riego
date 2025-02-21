@@ -18,10 +18,8 @@ export function PlantModal({ visible, onClose, onSave }: PlantModalProps) {
 
   useEffect(() => {
     if (visible) {
-      // Mostrar alerta cuando se abre el modal
       setShowAlert(true);
     } else {
-      // Limpiar campos cuando se cierra el modal
       setId('');
       setNombre('');
       setHumedad('');

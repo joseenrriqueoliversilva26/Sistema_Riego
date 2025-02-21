@@ -32,13 +32,6 @@ export default function PlantsLayout() {
           tabBarIcon: ({ color }) => <Layout size={28} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="scroll"
-        options={{
-          title: 'Scroll',
-          tabBarIcon: ({ color }) => <ScrollText size={28} color={color} />,
-        }}
-      />
     </Tabs>
   );
 }

@@ -18,7 +18,6 @@ export class PlantDataSource {
   async savePlant(plant: Plant): Promise<Plant> {
     console.log('Intentando guardar planta:', plant);
 
-    // Validar datos antes de enviar
     if (!plant.id || !plant.nombre || !plant.humedad) {
       throw new Error('ID, nombre y humedad son requeridos');
     }

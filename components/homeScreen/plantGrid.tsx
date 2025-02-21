@@ -38,14 +38,14 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start', // Cambiado de 'space-between' a 'flex-start'
-    gap: 8, // Añadido gap para espaciado uniforme
+    justifyContent: 'flex-start', 
+    gap: 8, 
   },
   card: {
     backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 10,
-    width: '24%', // Ajustado para tener en cuenta el gap
+    width: '24%',
     marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

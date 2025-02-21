@@ -1,6 +1,12 @@
-import HomeScreen from "@/components/homeScreen/homeScreen";
-import React from "react";
+// app/(auth)/login.tsx
+import { LoginView } from "@/components/auntentication/login/loginView";
+import { View } from "react-native";
 
-export default function homeScreen() {
-    return <HomeScreen />;
+export default function LoginScreen() {
+  return (
+    <View style={{ flex: 1 }}>
+      <LoginView />
+    </View>
+  );
 }
+
