@@ -1,13 +1,18 @@
-import { auth } from '@/lib/firebase '; 
+import { auth } from '@/lib/firebase ';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, View, AppState, TextInput, Text, Button } from 'react-native';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { FirebaseError } from 'firebase/app'; 
+import { Alert, StyleSheet, View, AppState, TextInput, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
+
+type AuthFunction = (
+  auth: any, 
+  email: string,
+  password: string
+) => Promise<UserCredential>;
 
 AppState.addEventListener('change', (state) => {
   if (state === 'active') {
-  } else {
   }
 });
 
@@ -16,84 +21,68 @@ export function LoginView() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function signInWithEmail() {
+  const handleAuth = async (authFunction: AuthFunction) => {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await authFunction(auth, email, password);
       const user = userCredential.user;
       if (user) {
         router.replace('/(index)');
       }
     } catch (error) {
-      if (error instanceof FirebaseError) { // Verifica si el error es de tipo FirebaseError
+      if (error instanceof FirebaseError) {
         Alert.alert('Error', error.message);
       } else {
-        Alert.alert('Error', 'Ocurrió un error desconocido al iniciar sesión');
+        Alert.alert('Error', 'Ocurrió un error desconocido');
       }
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function signUpWithEmail() {
-    setLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      if (user) {
-        router.replace('/(index)');
-      }
-    } catch (error) {
-      if (error instanceof FirebaseError) { 
-        Alert.alert('Error', error.message);
-      } else {
-        Alert.alert('Error', 'Ocurrió un error desconocido en el registro');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+  const handleSignIn = () => handleAuth(signInWithEmailAndPassword);
+  const handleSignUp = () => handleAuth(createUserWithEmailAndPassword);
 
   return (
     <View style={styles.container}>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Text>Email:</Text>
+      <Text style={styles.title}>¡Hola de nuevo!</Text>
+      <Text style={styles.subtitle}>Inicia sesión o regístrate para continuar</Text>
+
+      <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
           onChangeText={setEmail}
           value={email}
-          placeholder="email@address.com"
+          placeholder="Correo electrónico"
+          placeholderTextColor="#999"
           autoCapitalize="none"
           keyboardType="email-address"
           autoComplete="email"
         />
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Text>Contraseña:</Text>
         <TextInput
           style={styles.input}
           onChangeText={setPassword}
           value={password}
-          secureTextEntry={true}
           placeholder="Contraseña"
+          placeholderTextColor="#999"
+          secureTextEntry={true}
           autoCapitalize="none"
           autoComplete="password"
         />
       </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button 
-          title="Iniciar sesión" 
-          disabled={loading || !email || !password} 
-          onPress={signInWithEmail} 
-        />
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Button 
-          title="Registrarse" 
-          disabled={loading || !email || !password} 
-          onPress={signUpWithEmail} 
-        />
-      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#4CAF50" />
+      ) : (
+        <>
+          <TouchableOpacity style={styles.button} onPress={handleSignIn} disabled={!email || !password}>
+            <Text style={styles.buttonText}>Iniciar sesión</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={handleSignUp} disabled={!email || !password}>
+            <Text style={styles.buttonText}>Registrarse</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
@@ -101,22 +90,63 @@ export function LoginView() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 40,
-    padding: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    padding: 20,
   },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: 'stretch',
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    marginBottom: 10,
   },
-  mt20: {
-    marginTop: 20,
+  subtitle: {
+    fontSize: 16,
+    color: '#388E3C',
+    marginBottom: 40,
+  },
+  formContainer: {
+    width: '100%',
+    marginBottom: 20,
   },
   input: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginTop: 5,
+    borderColor: '#C8E6C9', 
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    fontSize: 16,
+    color: '#333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  button: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#4CAF50', 
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  buttonSecondary: {
+    backgroundColor: '#81C784', 
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });

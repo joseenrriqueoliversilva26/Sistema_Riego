@@ -1,18 +1,25 @@
-import { supabase } from "@/lib/supabase";
+import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
 import { Plant } from "./plant";
+import { db } from "@/lib/firebase ";
 
-export class PlantDataSource {
+export class DataSource {
+  private collectionRef = collection(db, 'datos');
+
   async getPlants(): Promise<Plant[]> {
-    const { data, error } = await supabase
-      .from('datos')
-      .select('*')
-      .order('id', { ascending: false });
-
-    if (error) {
-      console.error('Error al obtener plantas:', error.message);
+    try {
+      const q = query(this.collectionRef, orderBy('id', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const plants: Plant[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        plants.push(doc.data() as Plant);
+      });
+      
+      return plants;
+    } catch (error) {
+      console.error('Error al obtener plantas:', error);
       throw error;
     }
-    return data || [];
   }
 
   async savePlant(plant: Plant): Promise<Plant> {
@@ -23,27 +30,10 @@ export class PlantDataSource {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('datos')
-        .upsert([{
-          id: plant.id,
-          nombre: plant.nombre,
-          humedad: plant.humedad
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error de Supabase:', error);
-        throw error;
-      }
-
-      if (!data) {
-        throw new Error('No se recibieron datos después de guardar');
-      }
-
-      console.log('Planta guardada exitosamente:', data);
-      return data;
+      const plantDoc = doc(this.collectionRef, plant.id);
+      await setDoc(plantDoc, plant);
+      console.log('Planta guardada exitosamente:', plant);
+      return plant;
     } catch (error) {
       console.error('Error al guardar planta:', error);
       throw error;
@@ -51,15 +41,13 @@ export class PlantDataSource {
   }
 
   async deletePlant(id: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('datos')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error al eliminar planta:', error.message);
+    try {
+      const plantDoc = doc(this.collectionRef, id);
+      await deleteDoc(plantDoc);
+      return true;
+    } catch (error) {
+      console.error('Error al eliminar planta:', error);
       throw error;
     }
-    return true;
   }
 }

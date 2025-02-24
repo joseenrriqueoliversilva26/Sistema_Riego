@@ -1,11 +1,11 @@
 import React from "react";
 import { Image, StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import { Plant } from "./plantTypea";
+import { Plant } from "./plantType";
 
 type Props = {
     plant: Plant;
     onPress: (plant: Plant) => void;
-}
+};
 
 export function PlantCard({ plant, onPress }: Props) {
     return (
@@ -55,28 +55,6 @@ const styles = StyleSheet.create({
         flexDirection: "column",
         gap: 8,
         padding: 12,
-    },
-    careLevel: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-    },
-    easy: {
-        backgroundColor: "green",
-    },
-    moderate: {
-        backgroundColor: "orange",
-    },
-    difficult: {
-        backgroundColor: "red",
-    },
-    unknown: {
-        backgroundColor: "grey",
-    },
-    row: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
     },
     textValue: {
         fontSize: 18,

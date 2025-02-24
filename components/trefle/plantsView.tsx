@@ -1,57 +1,68 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View, RefreshControl, Dimensions, Platform,TouchableOpacity } from "react-native";
-import { PlantCard } from "./plantCarda";
-import { PlantModal } from "./plantModala";
-import { PlantResult } from "./plantsResulta";
-import { Plant } from "./plantTypea";
-import { DataSource } from "./dataSourcea";
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    View,
+    RefreshControl,
+    Dimensions,
+    Platform,
+    TouchableOpacity,
+    TextInput,
+} from "react-native";
+import { PlantCard } from "./plantCard";
+import { PlantModal } from "./plantModal";
+import { PlantResult } from "./plantsResult";
+import { Plant } from "./plantType";
+import { DataSource } from "./dataSource";
 
-export function PlantsViewa() {
+export function PlantsView() {
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    const [page, setPage] = useState(1);
+    const [page, setPage] = useState(1); 
     const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [data, setData] = useState<PlantResult>({
-        data: [],
-        to: 0,
-        per_page: 0,
-        current_page: 0,
-        last_page: 0,
-        total: 0
-    });
+    const [searchQuery, setSearchQuery] = useState(""); 
+    const [allPlants, setAllPlants] = useState<Plant[]>([]); 
+    const [hasMore, setHasMore] = useState(true); 
 
     const flatListRef = useRef<FlatList<Plant>>(null);
     const dataSource = new DataSource();
+    const debounceTimeout = useRef<NodeJS.Timeout | null>(null); 
 
-    const loadData = async (pageNumber: number, shouldAppend: boolean = false) => {
+    const loadData = async (pageNumber: number, query?: string) => {
         try {
             setLoading(true);
             setError(null);
-            const response = await dataSource.getPlants(pageNumber);
-            
-            if (shouldAppend) {
-                setData(prevData => ({
-                    ...response,
-                    data: [...prevData.data, ...response.data],
-                }));
+            const response = await dataSource.getPlants(pageNumber, query);
+
+            if (pageNumber === 1) {
+                setAllPlants(response.data);
             } else {
-                setData(response);
+                setAllPlants((prevPlants) => [...prevPlants, ...response.data]);
+            }
+
+            if (response.data.length === 0 || pageNumber >= response.last_page) {
+                setHasMore(false);
+            } else {
+                setHasMore(true);
             }
         } catch (error: any) {
             setError(error.message);
             Alert.alert(
-                'Error', 
+                "Error",
                 `No se pudieron cargar las plantas: ${error.message}`,
                 [
-                    { 
-                        text: 'Reintentar',
-                        onPress: () => loadData(pageNumber, shouldAppend)
+                    {
+                        text: "Reintentar",
+                        onPress: () => loadData(pageNumber, query),
                     },
                     {
-                        text: 'OK'
-                    }
+                        text: "OK",
+                    },
                 ]
             );
         } finally {
@@ -61,7 +72,26 @@ export function PlantsViewa() {
     };
 
     useEffect(() => {
-        loadData(page, page > 1);
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current); 
+        }
+
+        debounceTimeout.current = setTimeout(() => {
+            setPage(1); 
+            loadData(1, searchQuery); 
+        }, 500);
+
+        return () => {
+            if (debounceTimeout.current) {
+                clearTimeout(debounceTimeout.current);
+            }
+        };
+    }, [searchQuery]);
+
+    useEffect(() => {
+        if (page > 1) {
+            loadData(page, searchQuery);
+        }
     }, [page]);
 
     const handlePlantPress = (plant: Plant) => {
@@ -70,15 +100,15 @@ export function PlantsViewa() {
     };
 
     const handleEndReached = () => {
-        if (!loading && page < data.last_page) {
-            setPage(prevPage => prevPage + 1);
+        if (!loading && hasMore) {
+            setPage((prevPage) => prevPage + 1); 
         }
     };
 
     const handleRefresh = () => {
         setRefreshing(true);
         setPage(1);
-        loadData(1, false);
+        loadData(1, searchQuery);
     };
 
     const handleCloseModal = () => {
@@ -93,21 +123,18 @@ export function PlantsViewa() {
     };
 
     const renderItem = ({ item }: { item: Plant }) => (
-        <PlantCard
-            plant={item}
-            onPress={handlePlantPress}
-        />
+        <PlantCard plant={item} onPress={handlePlantPress} />
     );
 
     const renderEmpty = () => (
         <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-                {error ? 'Error al cargar plantas' : 'No se encontraron plantas'}
+                {error ? "Error al cargar plantas" : "No se encontraron plantas"}
             </Text>
             {error && (
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.retryButton}
-                    onPress={() => loadData(1, false)}
+                    onPress={() => loadData(1, searchQuery)}
                 >
                     <Text style={styles.retryButtonText}>Reintentar</Text>
                 </TouchableOpacity>
@@ -116,7 +143,7 @@ export function PlantsViewa() {
     );
 
     const renderFooter = () => {
-        if (!loading) return null;
+        if (!loading || !hasMore) return null;
         return (
             <View style={styles.loader}>
                 <ActivityIndicator size="large" color="#2d5a27" />
@@ -126,35 +153,36 @@ export function PlantsViewa() {
 
     const renderHeader = () => (
         <View style={styles.headerContainer}>
-            <Text style={styles.headerText}>
-                Mostrando {data.data.length} plantas de {data.total}
-            </Text>
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar plantas..."
+                value={searchQuery}
+                onChangeText={(text) => setSearchQuery(text)} 
+            />
         </View>
     );
 
     return (
         <View style={styles.container}>
-            <PlantModal 
-                plant={selectedPlant} 
-                visible={modalVisible} 
+            <PlantModal
+                plant={selectedPlant}
+                visible={modalVisible}
                 onClose={handleCloseModal}
             />
 
             <View style={styles.nav}>
-                <Text style={styles.navText}>
-                    Catálogo de Plantas
-                </Text>
+                <Text style={styles.navText}>Catálogo de Plantas</Text>
             </View>
 
-            <FlatList 
+            <FlatList
                 ref={flatListRef}
-                data={data.data}
+                data={allPlants} 
                 renderItem={renderItem}
-                keyExtractor={item => item.id.toString()}
+                keyExtractor={(item) => item.id.toString()}
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
                 refreshControl={
-                    <RefreshControl 
+                    <RefreshControl
                         refreshing={refreshing}
                         onRefresh={handleRefresh}
                         colors={["#2d5a27"]}
@@ -166,17 +194,17 @@ export function PlantsViewa() {
                 ListHeaderComponent={renderHeader}
                 contentContainerStyle={[
                     styles.listContainer,
-                    data.data.length === 0 && styles.emptyList
+                    allPlants.length === 0 && styles.emptyList,
                 ]}
                 showsVerticalScrollIndicator={false}
-                initialNumToRender={5}
+                initialNumToRender={10}
                 maxToRenderPerBatch={10}
                 windowSize={10}
-                removeClippedSubviews={Platform.OS === 'android'}
+                removeClippedSubviews={Platform.OS === "android"}
             />
 
-            {data.data.length > 0 && (
-                <TouchableOpacity 
+            {allPlants.length > 0 && (
+                <TouchableOpacity
                     style={styles.scrollTopButton}
                     onPress={scrollToTop}
                 >
@@ -187,45 +215,46 @@ export function PlantsViewa() {
     );
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: "#f5f5f5",
     },
     nav: {
-        backgroundColor: '#2d5a27',
+        backgroundColor: "#2d5a27",
         padding: 15,
-        alignItems: 'center',
+        alignItems: "center",
         elevation: 3,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
-        paddingTop: Platform.OS === 'ios' ? 50 : 15,
+        paddingTop: Platform.OS === "ios" ? 50 : 15,
     },
     navText: {
-        color: 'white',
+        color: "white",
         fontSize: 20,
-        fontWeight: '600',
+        fontWeight: "600",
     },
     headerContainer: {
         padding: 10,
-        backgroundColor: '#fff',
+        backgroundColor: "#fff",
         borderRadius: 8,
         marginBottom: 10,
         elevation: 2,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
         shadowRadius: 2,
     },
-    headerText: {
-        fontSize: 16,
-        color: '#2d5a27',
-        textAlign: 'center',
-        fontWeight: '500',
+    searchInput: {
+        height: 40,
+        borderColor: "#ccc",
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 10,
     },
     listContainer: {
         padding: 10,
@@ -233,70 +262,56 @@ const styles = StyleSheet.create({
     },
     emptyList: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: "center",
     },
     emptyContainer: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
         padding: 20,
         minHeight: 300,
     },
     emptyText: {
         fontSize: 18,
-        color: '#666',
-        textAlign: 'center',
+        color: "#666",
+        textAlign: "center",
     },
     loader: {
         paddingVertical: 20,
-        alignItems: 'center',
+        alignItems: "center",
     },
     scrollTopButton: {
-        position: 'absolute',
+        position: "absolute",
         right: 20,
         bottom: 20,
-        backgroundColor: '#2d5a27',
+        backgroundColor: "#2d5a27",
         width: 44,
         height: 44,
         borderRadius: 22,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
         elevation: 5,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
     },
     scrollTopButtonText: {
-        color: 'white',
+        color: "white",
         fontSize: 24,
-        fontWeight: 'bold',
+        fontWeight: "bold",
     },
     retryButton: {
-        backgroundColor: '#2d5a27',
+        backgroundColor: "#2d5a27",
         padding: 10,
         borderRadius: 5,
         marginTop: 15,
         minWidth: 120,
-        alignItems: 'center',
+        alignItems: "center",
     },
     retryButtonText: {
-        color: 'white',
+        color: "white",
         fontSize: 16,
-        fontWeight: '500',
+        fontWeight: "500",
     },
-    errorContainer: {
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ffebee',
-        borderRadius: 8,
-        margin: 10,
-    },
-    errorText: {
-        color: '#d32f2f',
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 10,
-    }
 });

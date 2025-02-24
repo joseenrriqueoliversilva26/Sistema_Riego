@@ -1,6 +1,6 @@
-import { PlantsViewa } from "@/components/trefle/plantsViewa";
+import { PlantsView } from "@/components/trefle/plantsView";
 import React from "react";
 
 export default function PlantsScreen() {
-    return <PlantsViewa />;
+    return <PlantsView />;
 }

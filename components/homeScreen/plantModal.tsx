@@ -235,7 +235,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-  // Nuevos estilos para la alerta
   alertContainer: {
     flex: 1,
     justifyContent: 'center',

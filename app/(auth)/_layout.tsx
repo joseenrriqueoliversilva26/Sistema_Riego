@@ -1,14 +1,15 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
-import { Layout, ScrollText } from 'lucide-react-native';
 
 import { HapticTab } from '@/components/HapticTab';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { Home } from 'lucide-react-native';
 
-export default function PlantsLayout() {
+export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
@@ -28,8 +29,8 @@ export default function PlantsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Plantas',
-          tabBarIcon: ({ color }) => <Layout size={28} color={color} />,
+          title: 'Login',
+          tabBarIcon: ({ color }) => <Home size={28} color={color} />,
         }}
       />
     </Tabs>

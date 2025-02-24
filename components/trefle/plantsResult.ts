@@ -1,6 +1,5 @@
-import { Plant } from "./plantTypea";
+import { Plant } from "./plantType";
 
-// plantsResult.ts
 export type PlantResult = {
     data: Plant[];
     to: number;
@@ -8,4 +7,4 @@ export type PlantResult = {
     current_page: number;
     last_page: number;
     total: number;
-}
+};

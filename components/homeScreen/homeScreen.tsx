@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { PlantModal } from './plantModal';
-import { PlantDataSource } from './datasource';
 import { Plant } from './plant';
 import { PlantGrid } from './plantGrid';
+import { DataSource } from "./datasource";
 
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [plants, setPlants] = useState<Plant[]>([]);
-  const dataSource = new PlantDataSource();
+  const dataSource = new DataSource();
 
   useEffect(() => {
     loadPlants();
@@ -60,6 +60,7 @@ export default function HomeScreen() {
           <Ionicons name="chevron-forward-outline" size={24} color="#999" />
         </View>
 
+        {/* Contenedor de plantas */}
         <PlantGrid plants={plants} />
 
         <View style={styles.sensorsContainer}>

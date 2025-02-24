@@ -1,4 +1,3 @@
-// app/index.tsx
 import { View } from 'react-native';
 import HomeScreen from '@/components/homeScreen/homeScreen';
 

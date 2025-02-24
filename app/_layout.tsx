@@ -7,11 +7,12 @@ import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Home, Info, Leaf, Flower, Server } from 'lucide-react-native';
+import { Home, Info, Leaf, Flower, User } from 'lucide-react-native'; 
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import { auth } from '@/lib//firebase ';
-import { onAuthStateChanged, User } from 'firebase/auth'; 
+import { auth } from '@/lib/firebase '; 
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'; 
+
 
 SplashScreen.preventAutoHideAsync();
 
@@ -29,7 +30,7 @@ const GreenTheme = {
 };
 
 export default function RootLayout() {
-  const [user, setUser] = useState<User | null>(null); 
+  const [user, setUser] = useState<FirebaseUser | null>(null); 
   const [isReady, setIsReady] = useState(false);
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -37,7 +38,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user); 
+      setUser(user);
       setIsReady(true);
     });
 
@@ -83,7 +84,7 @@ export default function RootLayout() {
             }}
           />
           <Drawer.Screen
-            name="(plants)"
+            name="(trefle)"
             options={{
               drawerLabel: 'Plantas',
               title: 'Plantas',
@@ -91,19 +92,11 @@ export default function RootLayout() {
             }}
           />
           <Drawer.Screen
-            name="(trefle)"
+            name="(user)"
             options={{
-              drawerLabel: 'Plantas',
-              title: 'Plantas',
-              drawerIcon: ({ color }) => <Flower size={28} color={color} />,
-            }}
-          />
-          <Drawer.Screen
-            name="(database)"
-            options={{
-              drawerLabel: 'Database',
-              title: 'Database',
-              drawerIcon: ({ color }) => <Server size={28} color={color} />,
+              drawerLabel: 'Usuario',
+              title: 'Usuario',
+              drawerIcon: ({ color }) => <User size={28} color={color} />,
             }}
           />
           <Drawer.Screen
@@ -114,7 +107,7 @@ export default function RootLayout() {
               drawerIcon: ({ color }) => <Info size={28} color={color} />,
             }}
           />
-          {['+not-found', 'index', '(auth)/login'].map((screen) => (
+          {['+not-found', 'index', '(auth)'].map((screen) => (
             <Drawer.Screen
               key={screen}
               name={screen}

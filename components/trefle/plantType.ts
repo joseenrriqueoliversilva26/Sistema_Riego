@@ -1,8 +1,8 @@
 export type Plant = {
     id: number;
-    common_name?: string;  // Puede ser null
+    common_name?: string; 
     scientific_name: string;
-    family_common_name?: string; // Puede ser null
+    family_common_name?: string;
     family?: string;
     image_url?: string;
     year?: number;

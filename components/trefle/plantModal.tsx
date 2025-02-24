@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
-import { Plant } from './plantTypea';
+import { Plant } from './plantType';
 
 type PlantModalProps = {
     plant: Plant | null;
@@ -131,21 +131,6 @@ const styles = StyleSheet.create({
         color: '#2d5a27',
         marginBottom: 8,
     },
-    careLevelContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    careLevelDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        marginRight: 8,
-    },
-    careLevelText: {
-        fontSize: 16,
-        color: '#6E798C',
-    },
     section: {
         marginTop: 20,
         backgroundColor: '#f8f9fa',
@@ -175,7 +160,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
     },
-    
     bibliographyText: {
         fontSize: 14,
         color: '#666',
