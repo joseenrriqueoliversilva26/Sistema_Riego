@@ -58,9 +58,9 @@ export default function RootLayout() {
   if (!user) {
     return (
       <ThemeProvider value={GreenTheme}>
-        <Stack>
+        <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen
-            name="(auth)/login"
+            name="autentication/login"
             options={{
               headerShown: false,
             }}
@@ -74,44 +74,62 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={GreenTheme}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Drawer>
+        <Drawer 
+          screenOptions={{
+            headerShown: false 
+          }}
+        >
           <Drawer.Screen
-            name="(index)"
+            name="home"
             options={{
               drawerLabel: 'Inicio',
               title: 'SISTEMA DE RIEGO INTELIGENTE PARA JARDINES',
               drawerIcon: ({ color }) => <Home size={28} color={color} />,
+              headerShown: true 
             }}
           />
           <Drawer.Screen
-            name="(trefle)"
+            name="trefle"
             options={{
               drawerLabel: 'Plantas',
               title: 'Plantas',
               drawerIcon: ({ color }) => <Leaf size={28} color={color} />,
+              headerShown: true 
             }}
           />
           <Drawer.Screen
-            name="(user)"
+            name="user"
             options={{
               drawerLabel: 'Usuario',
               title: 'Usuario',
               drawerIcon: ({ color }) => <User size={28} color={color} />,
+              headerShown: true 
             }}
           />
           <Drawer.Screen
-            name="(acerca)"
+            name="acerca"
             options={{
               drawerLabel: 'Acerca de',
               title: 'Acerca de',
               drawerIcon: ({ color }) => <Info size={28} color={color} />,
+              headerShown: true 
             }}
           />
-          {['+not-found', 'index', '(auth)'].map((screen) => (
+          <Drawer.Screen
+            name="index"
+            options={{ 
+              drawerItemStyle: { display: 'none' },
+              headerShown: false 
+            }}
+          />
+          {['+not-found', 'autentication'].map((screen) => (
             <Drawer.Screen
               key={screen}
               name={screen}
-              options={{ drawerItemStyle: { display: 'none' } }}
+              options={{ 
+                drawerItemStyle: { display: 'none' },
+                headerShown: false 
+              }}
             />
           ))}
         </Drawer>

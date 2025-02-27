@@ -2,7 +2,7 @@ import { auth } from '@/lib/firebase ';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, View, AppState, TextInput, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, UserCredential, sendPasswordResetEmail } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 
 type AuthFunction = (
@@ -20,6 +20,7 @@ export function LoginView() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
 
   const handleAuth = async (authFunction: AuthFunction) => {
     setLoading(true);
@@ -27,7 +28,7 @@ export function LoginView() {
       const userCredential = await authFunction(auth, email, password);
       const user = userCredential.user;
       if (user) {
-        router.replace('/(index)');
+        router.replace('/home');
       }
     } catch (error) {
       if (error instanceof FirebaseError) {
@@ -42,11 +43,40 @@ export function LoginView() {
 
   const handleSignIn = () => handleAuth(signInWithEmailAndPassword);
   const handleSignUp = () => handleAuth(createUserWithEmailAndPassword);
+  
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Por favor ingresa tu correo electrónico');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert(
+        'Correo enviado', 
+        'Hemos enviado un correo para restablecer tu contraseña. Por favor revisa tu bandeja de entrada.',
+        [{ text: 'OK', onPress: () => setResetMode(false) }]
+      );
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        Alert.alert('Error', error.message);
+      } else {
+        Alert.alert('Error', 'No se pudo enviar el correo de restablecimiento');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>¡Hola de nuevo!</Text>
-      <Text style={styles.subtitle}>Inicia sesión o regístrate para continuar</Text>
+      {resetMode ? (
+        <Text style={styles.subtitle}>Ingresa tu correo para restablecer tu contraseña</Text>
+      ) : (
+        <Text style={styles.subtitle}>Inicia sesión o regístrate para continuar</Text>
+      )}
 
       <View style={styles.formContainer}>
         <TextInput
@@ -59,20 +89,34 @@ export function LoginView() {
           keyboardType="email-address"
           autoComplete="email"
         />
-        <TextInput
-          style={styles.input}
-          onChangeText={setPassword}
-          value={password}
-          placeholder="Contraseña"
-          placeholderTextColor="#999"
-          secureTextEntry={true}
-          autoCapitalize="none"
-          autoComplete="password"
-        />
+        {!resetMode && (
+          <TextInput
+            style={styles.input}
+            onChangeText={setPassword}
+            value={password}
+            placeholder="Contraseña"
+            placeholderTextColor="#999"
+            secureTextEntry={true}
+            autoCapitalize="none"
+            autoComplete="password"
+          />
+        )}
       </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#4CAF50" />
+      ) : resetMode ? (
+        <>
+          <TouchableOpacity style={styles.button} onPress={handleForgotPassword} disabled={!email}>
+            <Text style={styles.buttonText}>Enviar correo de restablecimiento</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.button, styles.buttonSecondary]} 
+            onPress={() => setResetMode(false)}
+          >
+            <Text style={styles.buttonText}>Volver al inicio de sesión</Text>
+          </TouchableOpacity>
+        </>
       ) : (
         <>
           <TouchableOpacity style={styles.button} onPress={handleSignIn} disabled={!email || !password}>
@@ -80,6 +124,12 @@ export function LoginView() {
           </TouchableOpacity>
           <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={handleSignUp} disabled={!email || !password}>
             <Text style={styles.buttonText}>Registrarse</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.forgotPasswordButton} 
+            onPress={() => setResetMode(true)}
+          >
+            <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
         </>
       )}
@@ -148,5 +198,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  forgotPasswordButton: {
+    padding: 10,
+  },
+  forgotPasswordText: {
+    color: '#2E7D32',
+    fontSize: 16,
+    textDecorationLine: 'underline',
   },
 });

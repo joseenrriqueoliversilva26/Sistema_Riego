@@ -16,7 +16,7 @@ export const Userview = () => {
     try {
       await signOut(auth); 
       await Updates.reloadAsync(); 
-      router.replace('/(auth)'); 
+      router.replace('/autentication'); 
     } catch (error) {
       const firebaseError = error as FirebaseError;
       Alert.alert('Error', 'Error al cerrar sesión: ' + firebaseError.message);
