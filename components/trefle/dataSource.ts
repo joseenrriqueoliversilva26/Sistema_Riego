@@ -7,7 +7,7 @@ export class DataSource {
     async getPlants(page: number, query?: string): Promise<PlantResult> {
         let url = `https://trefle.io/api/v1/plants?token=${this.API_KEY}&page=${page}`;
         if (query) {
-            url += `&q=${encodeURIComponent(query)}`; 
+            url += `&filter[common_name]=${encodeURIComponent(query)}`;
         }
         console.log("URL de la API:", url);
 

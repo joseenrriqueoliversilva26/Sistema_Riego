@@ -1,18 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Plant } from './plant';
 
 type PlantGridProps = {
   plants: Plant[];
+  onSelectPlant: (plant: Plant) => void;
 };
 
-export function PlantGrid({ plants }: PlantGridProps) {
+export function PlantGrid({ plants, onSelectPlant }: PlantGridProps) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.grid}>
         {plants.map((plant) => (
-          <View key={plant.id} style={styles.card}>
+          <TouchableOpacity
+            key={plant.id}
+            style={styles.card}
+            onPress={() => onSelectPlant(plant)}
+          >
             <View style={styles.iconContainer}>
               <Ionicons name="leaf" size={24} color="#6B8E23" />
             </View>
@@ -23,7 +28,12 @@ export function PlantGrid({ plants }: PlantGridProps) {
               <Ionicons name="water" size={14} color="#4682B4" />
               <Text style={styles.humidityText}>{plant.humedad}%</Text>
             </View>
-          </View>
+            {plant.bombActive && (
+              <View style={styles.pumpActive}>
+                <Ionicons name="water-outline" size={12} color="#FFF" />
+              </View>
+            )}
+          </TouchableOpacity>
         ))}
       </View>
     </ScrollView>
@@ -84,5 +94,16 @@ const styles = StyleSheet.create({
     color: '#4682B4',
     fontWeight: '500',
     fontSize: 12,
+  },
+  pumpActive: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#4682B4',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -50,4 +50,14 @@ export class DataSource {
       throw error;
     }
   }
+  async togglePlantPump(id: string, active: boolean): Promise<boolean> {
+    try {
+      const plantRef = doc(this.collectionRef, id);
+      await setDoc(plantRef, { bombActive: active }, { merge: true });
+      return true;
+    } catch (error) {
+      console.error('Error al cambiar estado de bomba:', error);
+      throw error;
+    }
+  }
 }

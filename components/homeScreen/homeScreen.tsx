@@ -1,19 +1,59 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { PlantModal } from './plantModal';
+import { PlantDetailModal } from './plantDetailModal';
 import { Plant } from './plant';
 import { PlantGrid } from './plantGrid';
 import { DataSource } from "./datasource";
+import { useInterval } from "./useInterval";
+import { Animated } from "react-native";
 
 export default function HomeScreen() {
-  const [modalVisible, setModalVisible] = useState(false);
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [plants, setPlants] = useState<Plant[]>([]);
+  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
   const dataSource = new DataSource();
+  
+  const [ambientHumidity, setAmbientHumidity] = useState(65);
+  const [tankCapacity, setTankCapacity] = useState(75);
+  
+  const humidityAnim = useRef(new Animated.Value(65)).current;
+  const tankAnim = useRef(new Animated.Value(75)).current;
 
   useEffect(() => {
     loadPlants();
+    simulateSensorChanges();
   }, []);
+  
+  useEffect(() => {
+    Animated.timing(humidityAnim, {
+      toValue: ambientHumidity,
+      duration: 1000,
+      useNativeDriver: false
+    }).start();
+  }, [ambientHumidity]);
+  
+  useEffect(() => {
+    Animated.timing(tankAnim, {
+      toValue: tankCapacity,
+      duration: 1000,
+      useNativeDriver: false
+    }).start();
+  }, [tankCapacity]);
+  
+  useInterval(() => {
+    simulateSensorChanges();
+  }, 5000);
+  
+  const simulateSensorChanges = () => {
+    const newHumidity = Math.floor(Math.random() * 50) + 40;
+    setAmbientHumidity(newHumidity);
+    
+    const newTankCapacity = Math.floor(Math.random() * 80) + 20;
+    setTankCapacity(newTankCapacity);
+  };
 
   const loadPlants = async () => {
     try {
@@ -28,10 +68,58 @@ export default function HomeScreen() {
     try {
       await dataSource.savePlant(plant);
       await loadPlants();
-      setModalVisible(false);
+      setAddModalVisible(false);
     } catch (error) {
       console.error('Error al guardar planta:', error);
     }
+  };
+
+  const handleUpdatePlant = async (plant: Plant) => {
+    try {
+      await dataSource.savePlant(plant);
+      await loadPlants();
+      setDetailModalVisible(false);
+      setSelectedPlant(null);
+    } catch (error) {
+      console.error('Error al actualizar planta:', error);
+    }
+  };
+
+  const handleTogglePump = async (plantId: string, status: boolean): Promise<void> => {
+    try {
+      await dataSource.togglePlantPump(plantId, status);
+      await loadPlants();
+    } catch (error) {
+      console.error('Error al cambiar estado de bomba:', error);
+      throw error;
+    }
+  };
+
+  const handleDeletePlant = async (plantId: string): Promise<void> => {
+    try {
+      await dataSource.deletePlant(plantId);
+      await loadPlants();
+    } catch (error) {
+      console.error('Error al eliminar planta:', error);
+      throw error;
+    }
+  };
+
+  const handleSelectPlant = (plant: Plant) => {
+    setSelectedPlant(plant);
+    setDetailModalVisible(true);
+  };
+  
+  const getHumidityColor = () => {
+    if (ambientHumidity < 50) return '#FF9500';
+    if (ambientHumidity > 80) return '#4682B4';
+    return '#34C759';
+  };
+  
+  const getTankColor = () => {
+    if (tankCapacity < 30) return '#FF3B30';
+    if (tankCapacity < 50) return '#FF9500';
+    return '#34C759';
   };
 
   return (
@@ -41,7 +129,7 @@ export default function HomeScreen() {
           <Text style={styles.headerTitle}>Mi jardín</Text>
           <Pressable 
             style={styles.addButton}
-            onPress={() => setModalVisible(true)}
+            onPress={() => setAddModalVisible(true)}
           >
             <Text style={styles.addButtonText}>+</Text>
           </Pressable>
@@ -53,37 +141,78 @@ export default function HomeScreen() {
             <Text style={styles.notificationTitle}>
               Descubre el nuevo sistema de riego inteligente
             </Text>
-            <Text style={styles.notificationSubtitle}>
-              No mostrar de nuevo
-            </Text>
           </View>
           <Ionicons name="chevron-forward-outline" size={24} color="#999" />
         </View>
 
-        {/* Contenedor de plantas */}
-        <PlantGrid plants={plants} />
+        <PlantGrid 
+          plants={plants} 
+          onSelectPlant={handleSelectPlant}
+        />
 
         <View style={styles.sensorsContainer}>
           <View style={styles.sensorCard}>
             <Ionicons name="water-outline" size={32} color="#4682B4" />
             <Text style={styles.sensorTitle}>Humedad Ambiente</Text>
-            <Text style={styles.sensorValue}>65%</Text>
+            <Text style={[styles.sensorValue, { color: getHumidityColor() }]}>{ambientHumidity}%</Text>
             <Text style={styles.sensorSubtitle}>Sensor DHT11</Text>
+            
+            <View style={styles.progressBar}>
+              <Animated.View 
+                style={[
+                  styles.progressFill, 
+                  { 
+                    width: humidityAnim.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ['0%', '100%'],
+                    }),
+                    backgroundColor: getHumidityColor() 
+                  }
+                ]} 
+              />
+            </View>
           </View>
 
           <View style={styles.sensorCard}>
             <Ionicons name="beaker-outline" size={32} color="#6B8E23" />
             <Text style={styles.sensorTitle}>Capacidad Tanque</Text>
-            <Text style={styles.sensorValue}>75%</Text>
+            <Text style={[styles.sensorValue, { color: getTankColor() }]}>{tankCapacity}%</Text>
             <Text style={styles.sensorSubtitle}>Sensor Ultrasónico</Text>
+            
+            <View style={styles.progressBar}>
+              <Animated.View 
+                style={[
+                  styles.progressFill, 
+                  { 
+                    width: tankAnim.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ['0%', '100%'],
+                    }),
+                    backgroundColor: getTankColor() 
+                  }
+                ]} 
+              />
+            </View>
           </View>
         </View>
       </ScrollView>
 
       <PlantModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
         onSave={handleAddPlant}
+      />
+
+      <PlantDetailModal
+        visible={detailModalVisible}
+        onClose={() => {
+          setDetailModalVisible(false);
+          setSelectedPlant(null);
+        }}
+        onSave={handleUpdatePlant}
+        onTogglePump={handleTogglePump}
+        onDelete={handleDeletePlant}
+        plant={selectedPlant}
       />
     </View>
   );
@@ -187,5 +316,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  progressBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginTop: 5,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
   },
 });
