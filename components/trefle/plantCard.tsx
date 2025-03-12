@@ -9,7 +9,7 @@ type Props = {
 
 export function PlantCard({ plant, onPress }: Props) {
     return (
-        <TouchableOpacity onPress={() => onPress(plant)}>
+        <TouchableOpacity onPress={() => onPress(plant)} style={styles.cardContainer}>
             <View style={styles.card}>
                 <Image 
                     style={styles.image}  
@@ -18,14 +18,21 @@ export function PlantCard({ plant, onPress }: Props) {
                     }}
                 />
                 <View style={styles.content}>
-                    <Text style={styles.label}>Nombre común:</Text>
-                    <Text style={styles.textValue}>{plant.common_name || 'No disponible'}</Text>
-                    
-                    <Text style={styles.label}>Nombre científico:</Text>
-                    <Text style={styles.textValue}>{plant.scientific_name}</Text>
-
-                    <Text style={styles.label}>Familia:</Text>
-                    <Text style={styles.textValue}>{plant.family_common_name || plant.family || 'No disponible'}</Text>
+                    <Text style={styles.commonName} numberOfLines={2}>
+                        {plant.common_name || 'Sin nombre común'}
+                    </Text>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.label}>Científico:</Text>
+                        <Text style={styles.scientificName} numberOfLines={1}>
+                            {plant.scientific_name}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.label}>Familia:</Text>
+                        <Text style={styles.family} numberOfLines={1}>
+                            {plant.family_common_name || plant.family || 'No disponible'}
+                        </Text>
+                    </View>
                 </View>
             </View>
         </TouchableOpacity>
@@ -33,35 +40,59 @@ export function PlantCard({ plant, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
+    cardContainer: {
+        marginVertical: 8,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 3,
+    },
     card: {
         flexDirection: "row",
-        height: 450,
-        width: "100%",
-        borderRadius: 15,
-        borderWidth: 8,
-        borderColor: "#2d5a27",
-        padding: 10,
-        marginVertical: 8,
         backgroundColor: 'white',
+        borderRadius: 10,
+        overflow: 'hidden',
+        height: 180,
     },
     image: { 
-        width: "50%", 
+        width: "40%", 
         height: "100%",
-        borderTopLeftRadius: 8,
-        borderBottomLeftRadius: 8,
         resizeMode: "cover",
     },
     content: {
-        flexDirection: "column",
-        gap: 8,
+        flex: 1,
         padding: 12,
+        justifyContent: 'space-between',
     },
-    textValue: {
+    commonName: {
         fontSize: 18,
-        color: "#3C3E44"
+        fontWeight: 'bold',
+        color: "#2d5a27",
+        marginBottom: 8,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
     },
     label: {
-        fontSize: 21,
-        color: "#2d5a27"
+        fontSize: 14,
+        color: "#666",
+        marginRight: 8,
+        fontWeight: '500',
+    },
+    scientificName: {
+        fontSize: 14,
+        color: "#333",
+        flex: 1,
+    },
+    family: {
+        fontSize: 14,
+        color: "#333",
+        flex: 1,
     }
 });

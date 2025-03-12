@@ -1,5 +1,5 @@
 export interface Plant {
-  id: string;
+  id?: string; 
   nombre: string;
   humedad: string;
   bombActive?: boolean;

@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc, addDoc } from "firebase/firestore";
 import { Plant } from "./plant";
 import { db } from "@/lib/firebase ";
 
@@ -12,7 +12,7 @@ export class DataSource {
       const plants: Plant[] = [];
       
       querySnapshot.forEach((doc) => {
-        plants.push(doc.data() as Plant);
+        plants.push({ ...doc.data(), id: doc.id } as Plant);
       });
       
       return plants;
@@ -25,15 +25,31 @@ export class DataSource {
   async savePlant(plant: Plant): Promise<Plant> {
     console.log('Intentando guardar planta:', plant);
 
-    if (!plant.id || !plant.nombre || !plant.humedad) {
-      throw new Error('ID, nombre y humedad son requeridos');
+    if (!plant.nombre || !plant.humedad) {
+      throw new Error('Nombre y humedad son requeridos');
     }
 
     try {
-      const plantDoc = doc(this.collectionRef, plant.id);
-      await setDoc(plantDoc, plant);
-      console.log('Planta guardada exitosamente:', plant);
-      return plant;
+      if (plant.id && plant.id.trim() !== '') {
+        const plantRef = doc(this.collectionRef, plant.id);
+        await setDoc(plantRef, plant, { merge: true });
+        console.log('Planta actualizada exitosamente:', plant);
+        return plant;
+      } 
+      else {
+        const plants = await this.getPlants();
+        const lastPlant = plants[0];
+        const newId = lastPlant ? (parseInt(lastPlant.id || '0') + 1) : 1;
+
+        const plantWithId = { ...plant, id: newId.toString() }; 
+        
+        const docRef = await addDoc(this.collectionRef, plantWithId);
+        
+        const newPlant = { ...plantWithId, id: docRef.id };
+        
+        console.log('Planta nueva guardada exitosamente:', newPlant);
+        return newPlant;
+      }
     } catch (error) {
       console.error('Error al guardar planta:', error);
       throw error;
@@ -42,14 +58,17 @@ export class DataSource {
 
   async deletePlant(id: string): Promise<boolean> {
     try {
+      console.log("ID de la planta a eliminar:", id); 
       const plantDoc = doc(this.collectionRef, id);
       await deleteDoc(plantDoc);
+      console.log("Planta eliminada correctamente");
       return true;
     } catch (error) {
       console.error('Error al eliminar planta:', error);
       throw error;
     }
   }
+
   async togglePlantPump(id: string, active: boolean): Promise<boolean> {
     try {
       const plantRef = doc(this.collectionRef, id);

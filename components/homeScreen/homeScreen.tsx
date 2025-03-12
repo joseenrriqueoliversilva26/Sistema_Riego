@@ -98,7 +98,7 @@ export default function HomeScreen() {
   const handleDeletePlant = async (plantId: string): Promise<void> => {
     try {
       await dataSource.deletePlant(plantId);
-      await loadPlants();
+      await loadPlants(); 
     } catch (error) {
       console.error('Error al eliminar planta:', error);
       throw error;

@@ -9,7 +9,6 @@ type PlantModalProps = {
 };
 
 export function PlantModal({ visible, onClose, onSave }: PlantModalProps) {
-  const [id, setId] = useState('');
   const [nombre, setNombre] = useState('');
   const [humedad, setHumedad] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +19,6 @@ export function PlantModal({ visible, onClose, onSave }: PlantModalProps) {
     if (visible) {
       setShowAlert(true);
     } else {
-      setId('');
       setNombre('');
       setHumedad('');
       setError('');
@@ -29,11 +27,6 @@ export function PlantModal({ visible, onClose, onSave }: PlantModalProps) {
   }, [visible]);
 
   const handleSave = async () => {
-    if (!id.trim()) {
-      setError('El ID es requerido');
-      return;
-    }
-
     if (!nombre.trim()) {
       setError('El nombre de la planta es requerido');
       return;
@@ -47,9 +40,9 @@ export function PlantModal({ visible, onClose, onSave }: PlantModalProps) {
     try {
       setLoading(true);
       setError('');
-      
+
       await onSave({
-        id: id.trim(),
+        id: '',
         nombre: nombre.trim(),
         humedad: humedad.trim()
       });
@@ -108,17 +101,6 @@ export function PlantModal({ visible, onClose, onSave }: PlantModalProps) {
             
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             
-            <TextInput
-              style={styles.input}
-              placeholder="ID de la planta"
-              value={id}
-              onChangeText={(text) => {
-                setId(text);
-                setError('');
-              }}
-              keyboardType="numeric"
-            />
-
             <TextInput
               style={styles.input}
               placeholder="Nombre de la planta"

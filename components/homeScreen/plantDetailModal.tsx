@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Switch, ScrollView, StatusBar, Animated, Alert } from 'react-native';
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Animated, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Plant } from './plant';
 import { useInterval } from './useInterval';
+import { ScrollView, Switch } from 'react-native-gesture-handler';
 
 type PlantDetailModalProps = {
   visible: boolean;
@@ -13,34 +14,47 @@ type PlantDetailModalProps = {
   plant: Plant | null;
 };
 
+interface HumidityRecord {
+  timestamp: Date;
+  value: number;
+}
+
 export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDelete, plant }: PlantDetailModalProps) {
-  const [id, setId] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [humedad, setHumedad] = useState('');
+  const [id, setId] = useState(plant?.id || '');
+  const [nombre, setNombre] = useState(plant?.nombre || '');
+  const [humedad, setHumedad] = useState(plant?.humedad || '');
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState('');
-  const [pumpActive, setPumpActive] = useState(false);
+  const [pumpActive, setPumpActive] = useState(plant?.bombActive || false);
   const [pumpLoading, setPumpLoading] = useState(false);
   const [currentHumidity, setCurrentHumidity] = useState('45');
   const [isSimulating, setIsSimulating] = useState(false);
-  
+  const [humidityHistory, setHumidityHistory] = useState<HumidityRecord[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
   const humidityWidthAnim = useRef(new Animated.Value(45)).current;
 
   useEffect(() => {
     if (visible && plant) {
-      setId(plant.id);
-      setNombre(plant.nombre);
-      setHumedad(plant.humedad);
+      setId(plant.id || '');
+      setNombre(plant.nombre || '');
+      setHumedad(plant.humedad || '');
       setPumpActive(plant.bombActive || false);
-      
+
       const simulatedHumidity = Math.floor(Math.random() * 60) + 20;
       setCurrentHumidity(simulatedHumidity.toString());
       humidityWidthAnim.setValue(simulatedHumidity);
       setIsSimulating(true);
+      
+      setHumidityHistory([{
+        timestamp: new Date(),
+        value: simulatedHumidity
+      }]);
     } else if (!visible) {
       setError('');
       setIsSimulating(false);
+      setShowHistory(false);
     }
   }, [visible, plant]);
 
@@ -54,11 +68,20 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
 
   useInterval(() => {
     if (isSimulating) {
-      const direction = Math.random() > 0.5 ? 1 : -1;
-      const change = Math.floor(Math.random() * 5) + 1;
+      const direction = pumpActive ? 1 : Math.random() > 0.5 ? 1 : -1;
+      const change = Math.floor(Math.random() * 5) + (pumpActive ? 3 : 1);
       
       setCurrentHumidity(prevHumidity => {
         const newValue = Math.max(0, Math.min(100, parseInt(prevHumidity) + (direction * change)));
+        
+        setHumidityHistory(prev => [
+          ...prev, 
+          {
+            timestamp: new Date(),
+            value: newValue
+          }
+        ]);
+        
         return newValue.toString();
       });
     }
@@ -71,8 +94,17 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
       
       if (!pumpActive) {
         setCurrentHumidity(prevHumidity => {
-          const increase = Math.floor(Math.random() * 15) + 10;
+          const increase = Math.floor(Math.random() * 10) + 5;
           const newValue = Math.min(100, parseInt(prevHumidity) + increase);
+          
+          setHumidityHistory(prev => [
+            ...prev, 
+            {
+              timestamp: new Date(),
+              value: newValue
+            }
+          ]);
+          
           return newValue.toString();
         });
       }
@@ -87,11 +119,6 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
   };
 
   const handleSave = async () => {
-    if (!id.trim()) {
-      setError('El ID es requerido');
-      return;
-    }
-
     if (!nombre.trim()) {
       setError('El nombre de la planta es requerido');
       return;
@@ -107,10 +134,11 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
       setError('');
       
       await onSave({
-        id: id.trim(),
+        id,
         nombre: nombre.trim(),
         humedad: humedad.trim(),
-        bombActive: pumpActive
+        bombActive: pumpActive,
+        humedadActual: currentHumidity 
       });
 
       onClose();
@@ -124,7 +152,7 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
   
   const handleDelete = () => {
     if (!id || !onDelete) return;
-    
+  
     Alert.alert(
       "Eliminar Planta",
       `¿Estás seguro que deseas eliminar "${nombre}"?`,
@@ -179,6 +207,22 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
     'high': 'Nivel alto',
     'unknown': 'No disponible'
   }[humidityStatus];
+  
+  const calculateEfficiency = () => {
+    const currentHumidityNum = parseInt(currentHumidity);
+    const targetHumidityNum = parseInt(humedad);
+    
+    if (isNaN(currentHumidityNum) || isNaN(targetHumidityNum)) return 0;
+    
+    const difference = Math.abs(currentHumidityNum - targetHumidityNum);
+    const efficiency = Math.max(0, 100 - (difference * 5)); 
+    
+    return Math.min(100, efficiency);
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  };
 
   return (
     <Modal
@@ -208,19 +252,6 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
           >
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
               <View style={styles.contentContainer}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>ID de la planta</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={id}
-                    onChangeText={(text) => {
-                      setId(text);
-                      setError('');
-                    }}
-                    editable={false}
-                  />
-                </View>
-
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Nombre de la planta</Text>
                   <TextInput
@@ -279,7 +310,44 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
                       <Text style={styles.humidityTargetLabel}>Objetivo:</Text>
                       <Text style={styles.humidityTargetValue}>{humedad}%</Text>
                     </View>
+                    
+                    <View style={styles.efficiencyContainer}>
+                      <Text style={styles.efficiencyLabel}>Eficiencia del riego:</Text>
+                      <Text style={styles.efficiencyValue}>{calculateEfficiency()}%</Text>
+                    </View>
                   </View>
+                  
+                  <TouchableOpacity 
+                    style={styles.historyButton}
+                    onPress={() => setShowHistory(!showHistory)}
+                  >
+                    <Text style={styles.historyButtonText}>
+                      {showHistory ? 'Ocultar historial' : 'Ver historial'}
+                    </Text>
+                    <Ionicons 
+                      name={showHistory ? "chevron-up" : "chevron-down"} 
+                      size={16} 
+                      color="#4682B4" 
+                    />
+                  </TouchableOpacity>
+                  
+                  {showHistory && (
+                    <View style={styles.historyContainer}>
+                      <Text style={styles.historyTitle}>Historial de Humedad</Text>
+                      {humidityHistory.slice(-5).map((record, index) => (
+                        <View key={index} style={styles.historyRow}>
+                          <Text style={styles.historyTime}>{formatTime(record.timestamp)}</Text>
+                          <View style={styles.historyBarContainer}>
+                            <View style={[styles.historyBar, { width: `${record.value}%`, backgroundColor: 
+                              record.value < parseInt(humedad) - 5 ? '#FF9500' : 
+                              record.value > parseInt(humedad) + 5 ? '#4682B4' : '#34C759' 
+                            }]} />
+                          </View>
+                          <Text style={styles.historyValue}>{record.value}%</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
 
                 <View style={styles.pumpContainer}>
@@ -289,22 +357,56 @@ export function PlantDetailModal({ visible, onClose, onSave, onTogglePump, onDel
                   </View>
                   
                   <View style={styles.pumpControls}>
-                    <Text style={styles.pumpStatus}>
-                      Estado: {pumpActive ? 'Encendida' : 'Apagada'}
-                    </Text>
+                    <View style={styles.pumpStatusContainer}>
+                      <Text style={styles.pumpStatus}>
+                        Estado: 
+                      </Text>
+                      <Text style={[styles.pumpStatusValue, {
+                        color: pumpActive ? '#34C759' : '#FF9500'
+                      }]}>
+                        {pumpActive ? 'Encendida' : 'Apagada'}
+                      </Text>
+                    </View>
                     
                     {pumpLoading ? (
                       <ActivityIndicator size="small" color="#4682B4" />
                     ) : (
-                      <Switch
-                        value={pumpActive}
-                        onValueChange={handleTogglePump}
-                        trackColor={{ false: '#CCCCCC', true: '#81B0FF' }}
-                        thumbColor={pumpActive ? '#4682B4' : '#F5F5F5'}
-                        ios_backgroundColor="#CCCCCC"
-                      />
+                      <View style={styles.switchContainer}>
+                        <Text style={styles.switchLabel}>{pumpActive ? 'ON' : 'OFF'}</Text>
+                        <Switch
+                          value={pumpActive}
+                          onValueChange={handleTogglePump}
+                          trackColor={{ false: '#CCCCCC', true: '#81B0FF' }}
+                          thumbColor={pumpActive ? '#4682B4' : '#F5F5F5'}
+                          ios_backgroundColor="#CCCCCC"
+                        />
+                      </View>
                     )}
                   </View>
+                  
+                  <View style={styles.savingContainer}>
+                    <Ionicons name={pumpActive ? "flash" : "leaf"} size={18} color={pumpActive ? "#FF9500" : "#34C759"} />
+                    <Text style={[styles.savingText, {color: pumpActive ? "#FF9500" : "#34C759"}]}>
+                      {pumpActive 
+                        ? "Consumiendo agua. Recuerda apagar la bomba cuando no sea necesario."
+                        : "Ahorrando agua. Sistema de riego inteligente en reposo."}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={styles.recommendationsContainer}>
+                  <View style={styles.recommendationsHeader}>
+                    <Ionicons name="bulb-outline" size={24} color="#FFC107" />
+                    <Text style={styles.recommendationsTitle}>Recomendaciones</Text>
+                  </View>
+                  
+                  <Text style={styles.recommendationText}>
+                    {humidityStatus === 'low' 
+                      ? "La humedad está por debajo del nivel óptimo. Considera activar la bomba de riego."
+                      : humidityStatus === 'high' 
+                        ? "La humedad está por encima del nivel óptimo. Recomendamos esperar antes de regar nuevamente."
+                        : "La planta se encuentra con un nivel de humedad óptimo. ¡Buen trabajo!"}
+                  </Text>
                 </View>
               </View>
             </ScrollView>
@@ -362,7 +464,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 20,
     width: '90%',
-    height: '80%',
+    height: '85%',
     alignItems: 'stretch',
     shadowColor: '#000',
     shadowOffset: {
@@ -390,6 +492,12 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 5,
+  },
+  errorText: {
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginVertical: 10,
+    paddingHorizontal: 15,
   },
   scrollView: {
     flex: 1,
@@ -476,6 +584,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
+    marginBottom: 10,
   },
   humidityTargetLabel: {
     fontSize: 12,
@@ -487,11 +596,88 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 5,
   },
+  efficiencyContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    paddingTop: 10,
+    marginTop: 5,
+  },
+  efficiencyLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  efficiencyValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#34C759',
+  },
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    paddingVertical: 8,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+  },
+  historyButtonText: {
+    fontSize: 14,
+    color: '#4682B4',
+    fontWeight: '500',
+    marginRight: 5,
+  },
+  historyContainer: {
+    marginTop: 15,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  historyTime: {
+    width: 55,
+    fontSize: 12,
+    color: '#666',
+  },
+  historyBarContainer: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginHorizontal: 10,
+  },
+  historyBar: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  historyValue: {
+    width: 35,
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
+    textAlign: 'right',
+  },
   pumpContainer: {
     backgroundColor: '#F5F6FA',
     borderRadius: 10,
     padding: 15,
-    marginBottom: 5,
+    marginBottom: 15,
     ...Platform.select({
       android: {
         elevation: 2,
@@ -501,7 +687,7 @@ const styles = StyleSheet.create({
   pumpHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   pumpTitle: {
     fontSize: 16,
@@ -513,11 +699,74 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 15,
+  },
+  pumpStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   pumpStatus: {
     fontSize: 15,
     color: '#333',
     fontWeight: '500',
+    marginRight: 5,
+  },
+  pumpStatusValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  switchLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
+    marginRight: 5,
+  },
+  savingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F8F8',
+    padding: 10,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#34C759',
+  },
+  savingText: {
+    marginLeft: 10,
+    fontSize: 13,
+    flex: 1,
+  },
+  recommendationsContainer: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFC107',
+    ...Platform.select({
+      android: {
+        elevation: 2,
+      }
+    })
+  },
+  recommendationsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  recommendationsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 10,
+  },
+  recommendationText: {
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
   },
   buttonContainer: {
     width: '100%',
@@ -537,7 +786,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   deleteButton: {
     backgroundColor: '#FF3B30',
@@ -558,14 +807,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     marginLeft: 8,
-  },
-  errorText: {
-    color: '#FF3B30',
-    marginHorizontal: 15,
-    marginBottom: 10,
-    marginTop: -5,
-    textAlign: 'center',
-  },
+  }
 });
