@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Home, Info, Leaf, Flower, User } from 'lucide-react-native'; 
+import { Home, Info, Leaf, User } from 'lucide-react-native'; 
 import { View } from 'react-native';
 import { auth } from '@/lib/firebase '; 
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'; 
