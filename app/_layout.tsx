@@ -1,6 +1,6 @@
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -9,7 +9,6 @@ import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Home, Info, Leaf, Flower, User } from 'lucide-react-native'; 
 import { View } from 'react-native';
-import { router } from 'expo-router';
 import { auth } from '@/lib/firebase '; 
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'; 
 
