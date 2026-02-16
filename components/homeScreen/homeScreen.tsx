@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, Animated } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { PlantModal } from './plantModal';
 import { PlantDetailModal } from './plantDetailModal';
@@ -7,7 +7,6 @@ import { Plant } from './plant';
 import { PlantGrid } from './plantGrid';
 import { DataSource } from "./datasource";
 import { useInterval } from "./useInterval";
-import { Animated } from "react-native";
 
 export default function HomeScreen() {
   const [addModalVisible, setAddModalVisible] = useState(false);
